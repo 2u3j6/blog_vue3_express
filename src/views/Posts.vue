@@ -1,8 +1,16 @@
 <!--
  * @Author: yu2u3j6 1398433233@qq.com
+ * @Date: 2025-01-20 16:10:13
+ * @LastEditors: yu2u3j6 1398433233@qq.com
+ * @LastEditTime: 2025-01-20 16:18:53
+ * @FilePath: \cursor_demo\src\views\Posts.vue
+ * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
+-->
+<!--
+ * @Author: yu2u3j6 1398433233@qq.com
  * @Date: 2025-01-05 14:15:09
  * @LastEditors: yu2u3j6 1398433233@qq.com
- * @LastEditTime: 2025-01-20 10:16:05
+ * @LastEditTime: 2025-01-20 16:15:01
  * @FilePath: \cursor_demo\src\views\Posts.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -48,18 +56,7 @@
       </el-table-column>
     </el-table>
 
-    <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]" :total="total" @size-change="handleSizeChange" @current-change="handlePageChange" layout="total, sizes, prev, pager, next" background />
-
-    <!-- 使用新的 PostForm 组件 -->
-    <!-- <el-dialog v-model="dialogVisible" :title="form.id ? '编辑文章' : '新建文章'" width="80%">
-      <PostForm :categories="categories" :tags="tags" v-model:title="form.title" v-model:categoryId="form.categoryId" v-model:tagIds="form.tagIds" v-model:content="form.content" v-model:status="form.status" />
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">
-          确定
-        </el-button>
-      </template>
-    </el-dialog> -->
+    <BasePagination :page="currentPage" :limit="pageSize" :total="total" @handleCurrentChange="handleCurrentChange" />
 
     <addPostDialog @addPostSuccess="handleAddPostSuccess" v-model:visible="dialogVisible" v-if="dialogVisible" />
   </div>
@@ -71,6 +68,7 @@
   import { ElMessage, ElMessageBox } from 'element-plus'
   import request from '@/utils/request'
   import { useFormatTime } from '@/hook'
+  import BasePagination from '@/components/BasePagination.vue'
 
   const posts = ref([])
   const currentPage = ref(1)
@@ -153,14 +151,10 @@
     })
   }
 
-  const handlePageChange = () => {
-    getList()
-  }
-
-  // 添加处理页码大小改变的方法
-  const handleSizeChange = (val) => {
-    pageSize.value = val
-    currentPage.value = 1  // 切换每页条数时重置为第一页
+  // 合并处理分页改变事件
+  const handleCurrentChange = ({ page, limit, type }) => {
+    currentPage.value = page
+    pageSize.value = limit
     getList()
   }
 
