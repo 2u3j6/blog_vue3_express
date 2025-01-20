@@ -4,7 +4,12 @@ exports.list = async (ctx) => {
   const { page = 1, pageSize = 10 } = ctx.query
 
   try {
-    const { count, rows } = await Post.findAndCountAll({
+    // 单独查询总数，避免关联查询影响
+    const count = await Post.count()
+    console.log('Total posts count:', count) // 添加日志
+
+    // 分页查询数据
+    const rows = await Post.findAll({
       include: [
         {
           model: Category,
@@ -31,6 +36,7 @@ exports.list = async (ctx) => {
       },
     }
   } catch (error) {
+    console.error('获取文章列表失败:', error)
     ctx.throw(500, error)
   }
 }
