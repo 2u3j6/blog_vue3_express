@@ -48,7 +48,7 @@
       </el-table-column>
     </el-table>
 
-    <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :total="total" @current-change="handlePageChange" />
+    <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]" :total="total" @size-change="handleSizeChange" @current-change="handlePageChange" layout="total, sizes, prev, pager, next" background />
 
     <!-- 使用新的 PostForm 组件 -->
     <!-- <el-dialog v-model="dialogVisible" :title="form.id ? '编辑文章' : '新建文章'" width="80%">
@@ -157,6 +157,13 @@
     getList()
   }
 
+  // 添加处理页码大小改变的方法
+  const handleSizeChange = (val) => {
+    pageSize.value = val
+    currentPage.value = 1  // 切换每页条数时重置为第一页
+    getList()
+  }
+
   onMounted(() => {
     getList()
   })
@@ -172,5 +179,6 @@
   .el-pagination {
     margin-top: 20px;
     justify-content: flex-end;
+    padding: 0; /* 移除内边距 */
   }
 </style> 
