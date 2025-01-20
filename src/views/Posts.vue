@@ -2,7 +2,7 @@
  * @Author: yu2u3j6 1398433233@qq.com
  * @Date: 2025-01-20 16:10:13
  * @LastEditors: yu2u3j6 1398433233@qq.com
- * @LastEditTime: 2025-01-20 16:18:53
+ * @LastEditTime: 2025-01-20 18:00:32
  * @FilePath: \cursor_demo\src\views\Posts.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -58,7 +58,7 @@
 
     <BasePagination :page="currentPage" :limit="pageSize" :total="total" @handleCurrentChange="handleCurrentChange" />
 
-    <addPostDialog @addPostSuccess="handleAddPostSuccess" v-model:visible="dialogVisible" v-if="dialogVisible" />
+    <addPostDialog :formData="formData" @addPostSuccess="handleAddPostSuccess" v-model:visible="dialogVisible" v-if="dialogVisible" />
   </div>
 </template>
 
@@ -75,6 +75,7 @@
   const pageSize = ref(10)
   const total = ref(0)
   const dialogVisible = ref(false)
+  const formData = ref({})
 
   const searchQuery = ref('')
 
@@ -125,6 +126,7 @@
   // 获取分类列表
 
   const handleAdd = () => {
+    formData.value = {}
     dialogVisible.value = true
   }
 
@@ -133,7 +135,7 @@
   }
 
   const handleEdit = (row) => {
-    form.value = { ...row }
+    formData.value = { ...row }
     dialogVisible.value = true
   }
 

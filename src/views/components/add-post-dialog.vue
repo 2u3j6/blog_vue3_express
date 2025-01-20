@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="visible" title="Tips" width="500" :before-close="handleClose">
+  <el-dialog v-model="visible" :title="title" width="500" :before-close="handleClose">
     <PostForm ref="formRef" :categories="categories" :tags="tags" v-model:title="form.title" v-model:categoryId="form.categoryId" v-model:tagIds="form.tagIds" v-model:content="form.content" v-model:status="form.status" />
     <template #footer>
       <el-button @click="visible = false">取消</el-button>
@@ -20,11 +20,18 @@
     visible: {
       type: Boolean,
       default: false
+    },
+    formData: {
+      type: Object,
+      default: {}
     }
   }
   )
   const emit = defineEmits(['update:visible'])
   const formRef = ref(null)
+  const title = computed(() => {
+    return props.formData?.id ? '编辑文章' : '新增文章'
+  })
   const tags = ref([])
   const categories = ref([])
   const form = ref({
@@ -34,6 +41,21 @@
     categoryId: '',
     tagIds: [],
     status: 0
+  })
+
+  watch(() => props.formData, (newVal) => {
+
+
+    const tagIds = newVal.tags?.map((item) => item.id)
+    const newForm = {
+      ...newVal,
+      tagIds
+    }
+
+    form.value = { ...newForm }
+  }, {
+    deep: true,
+    immediate: true
   })
   const visible = defineModel('visible')
   const handleClose = (done) => {

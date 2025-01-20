@@ -1,5 +1,5 @@
 <template>
-  <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]" :total="total" @size-change="handleSizeChange" @current-change="handlePageChange" layout="total, sizes, prev, pager, next" background />
+  <el-pagination size="small" v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]" :total="total" @size-change="handleSizeChange" @current-change="handlePageChange" layout="total, sizes, prev, pager, next" background />
 </template>
 
 <script setup>
