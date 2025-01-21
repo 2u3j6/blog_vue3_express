@@ -12,6 +12,8 @@ const cors = require('@koa/cors')
 const bodyParser = require('koa-bodyparser')
 const errorHandler = require('./middlewares/errorHandler')
 const router = require('./routes')
+const path = require('path')
+const static = require('koa-static')
 
 const app = new Koa()
 
@@ -30,6 +32,9 @@ app.use(
 
 // 解析请求体
 app.use(bodyParser())
+
+// 静态文件服务
+app.use(static(path.join(__dirname, '../uploads')))
 
 // 路由
 app.use(router.routes())
