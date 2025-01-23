@@ -11,6 +11,8 @@ const storage = multer.diskStorage({
   },
   // 设置文件名
   filename: function (req, file, cb) {
+    console.log(req.body, 909)
+
     // 获取文件扩展名
     const ext = path.extname(file.originalname)
 
@@ -111,11 +113,21 @@ exports.mergeSlice = async (ctx) => {
     const chunksDir = path.join(__dirname, '../../uploads')
     const filePath = path.join(chunksDir, filename)
 
-    // 读取所有切片
+    // 读取所有切片并按索引排序
     const chunkPaths = []
     for (let i = 0; i < total; i++) {
-      chunkPaths.push(path.join(chunksDir, `${i}-${filename}`))
+      const chunkPath = path.join(chunksDir, `${i}-${filename}`)
+      // 确保切片文件存在
+      try {
+        await fsPromises.access(chunkPath)
+        chunkPaths.push({ index: i, path: chunkPath })
+      } catch (err) {
+        throw new Error(`切片 ${i} 不存在，请重新上传`)
+      }
     }
+
+    // 按索引排序
+    chunkPaths.sort((a, b) => a.index - b.index)
 
     // 使用 Promise 包装写入流操作
     await new Promise((resolve, reject) => {
@@ -127,11 +139,14 @@ exports.mergeSlice = async (ctx) => {
       // 使用异步函数处理写入
       async function mergeChunks() {
         try {
-          for (let chunkPath of chunkPaths) {
-            const buffer = await fsPromises.readFile(chunkPath)
-            writeStream.write(buffer)
+          for (const chunk of chunkPaths) {
+            const buffer = await fsPromises.readFile(chunk.path)
+            if (!writeStream.write(buffer)) {
+              // 如果缓冲区已满，等待 'drain' 事件
+              await new Promise((resolve) => writeStream.once('drain', resolve))
+            }
             // 删除切片文件
-            await fsPromises.unlink(chunkPath)
+            await fsPromises.unlink(chunk.path)
           }
           writeStream.end()
         } catch (err) {
