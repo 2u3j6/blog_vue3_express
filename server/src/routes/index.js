@@ -2,7 +2,7 @@
  * @Author: yu2u3j6 1398433233@qq.com
  * @Date: 2025-01-21 14:47:45
  * @LastEditors: yu2u3j6 1398433233@qq.com
- * @LastEditTime: 2025-01-21 17:02:56
+ * @LastEditTime: 2025-01-23 15:59:44
  * @FilePath: \cursor_demo\server\src\routes\index.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -19,9 +19,10 @@ const router = new Router()
 // 认证相关路由
 router.post('/blog/login', auth.login)
 
-// 文件上传路由 - 修改中间件顺序
-router.post('/blog/upload', upload.upload, authMiddleware, upload.uploadFile)
-
+// 文件上传路由
+router.post('/blog/upload', upload.upload, upload.uploadFile)
+router.post('/blog/upload/slice', upload.upload, upload.uploadSlice)
+router.post('/blog/upload/merge', upload.mergeSlice)
 // 文章相关路由
 router.get('/blog/posts', authMiddleware, post.list)
 router.post('/blog/posts', authMiddleware, post.create)

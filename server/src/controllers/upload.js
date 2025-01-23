@@ -1,5 +1,7 @@
 const multer = require('@koa/multer')
 const path = require('path')
+const fs = require('fs') // 使用原生 fs
+const fsPromises = require('fs').promises // 使用 promises API
 
 // 配置文件存储
 const storage = multer.diskStorage({
@@ -11,8 +13,9 @@ const storage = multer.diskStorage({
   filename: function (req, file, cb) {
     // 获取文件扩展名
     const ext = path.extname(file.originalname)
+
     // 生成文件名: 时间戳 + 随机数 + 原始扩展名
-    cb(null, Date.now() + '-' + Math.round(Math.random() * 1e9) + ext)
+    cb(null, `temp-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`)
   },
 })
 
@@ -24,17 +27,8 @@ const limits = {
 
 // 文件过滤器
 const fileFilter = (req, file, cb) => {
-  // 限制文件类型
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
-
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true)
-  } else {
-    // 修改错误处理方式
-    const error = new Error(`不支持的文件类型: ${file.mimetype}, 支持的类型: ${allowedTypes.join(', ')}`)
-    error.status = 400 // 设置状态码为 400 而不是 401
-    cb(error)
-  }
+  // 允许所有类型的文件
+  cb(null, true)
 }
 
 // 创建 multer 实例
@@ -44,19 +38,20 @@ const upload = multer({
   fileFilter,
 })
 
+// 导出 multer 中间件
+exports.upload = upload.single('file')
+
 // 文件上传处理
 exports.uploadFile = async (ctx) => {
   try {
     const file = ctx.request.file
-
     if (!file) {
       ctx.throw(400, {
         code: 400,
-        message: '没有文件被上传或文件类型不支持',
+        message: '没有文件被上传',
       })
     }
 
-    // 返回文件信息
     ctx.body = {
       code: 200,
       data: {
@@ -68,7 +63,6 @@ exports.uploadFile = async (ctx) => {
       },
     }
   } catch (error) {
-    // 处理错误
     ctx.status = error.status || 500
     ctx.body = {
       code: error.status || 500,
@@ -77,5 +71,90 @@ exports.uploadFile = async (ctx) => {
   }
 }
 
-// 导出 multer 中间件
-exports.upload = upload.single('file')
+// 文件切片上传
+exports.uploadSlice = async (ctx) => {
+  try {
+    const file = ctx.request.file
+    const { filename, index, total } = ctx.request.body
+
+    if (!file) {
+      ctx.throw(400, {
+        code: 400,
+        message: '没有文件被上传',
+      })
+    }
+    // 重命名为需要的格式
+    const newPath = path.join(path.dirname(file.path), `${index}-${filename}`)
+
+    await fsPromises.rename(file.path, newPath)
+    ctx.body = {
+      code: 200,
+      data: {
+        filename,
+        index,
+        total,
+      },
+    }
+  } catch (error) {
+    ctx.status = error.status || 500
+    ctx.body = {
+      code: error.status || 500,
+      message: error.message,
+    }
+  }
+}
+
+// 添加合并切片的方法
+exports.mergeSlice = async (ctx) => {
+  try {
+    const { filename, total } = ctx.request.body
+    const chunksDir = path.join(__dirname, '../../uploads')
+    const filePath = path.join(chunksDir, filename)
+
+    // 读取所有切片
+    const chunkPaths = []
+    for (let i = 0; i < total; i++) {
+      chunkPaths.push(path.join(chunksDir, `${i}-${filename}`))
+    }
+
+    // 使用 Promise 包装写入流操作
+    await new Promise((resolve, reject) => {
+      const writeStream = fs.createWriteStream(filePath)
+
+      writeStream.on('error', reject)
+      writeStream.on('finish', resolve)
+
+      // 使用异步函数处理写入
+      async function mergeChunks() {
+        try {
+          for (let chunkPath of chunkPaths) {
+            const buffer = await fsPromises.readFile(chunkPath)
+            writeStream.write(buffer)
+            // 删除切片文件
+            await fsPromises.unlink(chunkPath)
+          }
+          writeStream.end()
+        } catch (err) {
+          writeStream.destroy(err)
+        }
+      }
+
+      mergeChunks().catch(reject)
+    })
+
+    ctx.body = {
+      code: 200,
+      data: {
+        filename,
+        path: filePath,
+      },
+    }
+  } catch (error) {
+    console.error('合并切片错误:', error)
+    ctx.status = error.status || 500
+    ctx.body = {
+      code: error.status || 500,
+      message: error.message,
+    }
+  }
+}

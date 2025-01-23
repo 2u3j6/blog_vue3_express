@@ -2,7 +2,7 @@
  * @Author: yu2u3j6 1398433233@qq.com
  * @Date: 2025-01-20 16:10:13
  * @LastEditors: yu2u3j6 1398433233@qq.com
- * @LastEditTime: 2025-01-21 16:06:13
+ * @LastEditTime: 2025-01-23 15:58:36
  * @FilePath: \cursor_demo\src\views\Posts.vue
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
 -->
@@ -24,6 +24,12 @@
       <el-upload v-model:file-list="fileList" class="upload-demo" :limit="3" :http-request="customUpload"
                  :on-change="handleChange" :on-exceed="handleExceed">
         <el-button type="primary">上传</el-button>
+
+      </el-upload>
+
+      <el-upload name="file" v-model:file-list="fileSliceList" class="upload-demo" :limit="3"
+                 :http-request="customSliceUpload" :on-change="handleSliceChange">
+        <el-button type="primary">分片上传</el-button>
 
       </el-upload>
     </div>
@@ -89,6 +95,7 @@ const searchQuery = ref('')
 
 
 const fileList = ref([])
+const fileSliceList = ref([])
 const customUpload = async (options) => {
   try {
     const formData = new FormData()
@@ -106,6 +113,56 @@ const customUpload = async (options) => {
     options.onError(error)
     ElMessage.error('上传失败')
   }
+}
+const customSliceUpload = async (options) => {
+  const file = options.file
+  const chunks = createFileChunk(file)
+  const list = []
+  console.log(chunks, 44)
+
+  try {
+    // 上传切片
+    for (let index = 0; index < chunks.length; index++) {
+      const chunk = chunks[index]
+      const formData = new FormData()
+      formData.append('file', chunk)
+      formData.append('filename', file.name)
+      formData.append('index', index)
+      formData.append('total', chunks.length)
+      const res = await request.post('/upload/slice', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+      list.push(res)
+    }
+
+    // 所有切片上传完成后，请求合并
+    const mergeRes = await request.post('/upload/merge', {
+      filename: file.name,
+      total: chunks.length
+    })
+
+    console.log('合并结果:', mergeRes)
+    ElMessage.success('上传成功')
+    options.onSuccess(mergeRes)
+  } catch (error) {
+    console.error('上传错误:', error)
+    ElMessage.error('上传失败')
+    options.onError(error)
+  }
+}
+
+
+// 文件切片处理
+const createFileChunk = (file, size = 0.5 * 1024 * 1024) => {
+  const chunks = []
+  let cur = 0
+  while (cur < file.size) {
+    chunks.push(file.slice(cur, cur + size))
+    cur += size
+  }
+  return chunks
 }
 const handleChange = (file, fileList) => {
   console.log(file, fileList);
