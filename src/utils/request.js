@@ -94,4 +94,86 @@ request.interceptors.response.use(
   }
 )
 
+// 在文件末尾添加新的方法
+const streamRequest = axios.create({
+  baseURL: '/blog',
+  timeout: 30000,
+  responseType: 'text',  // 使用text而不是stream
+  headers: {
+    'Content-Type': 'application/json',
+  }
+})
+
+// 给streamRequest添加请求拦截器
+streamRequest.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => {
+    console.error('Stream请求错误:', error)
+    return Promise.reject(error)
+  }
+)
+
+// 给streamRequest添加响应拦截器
+streamRequest.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+
+// 导出流式请求方法
+export const createStreamRequest = (config) => {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    let buffer = ''
+
+    xhr.open(config.method || 'GET', streamRequest.defaults.baseURL + config.url)
+
+    // 设置请求头
+    xhr.setRequestHeader('Content-Type', 'application/json')
+    const token = localStorage.getItem('token')
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+    }
+
+    xhr.onprogress = (event) => {
+      const newText = xhr.responseText.slice(buffer.length)
+      buffer = xhr.responseText
+
+      if (newText && config.onDownloadProgress) {
+        config.onDownloadProgress({
+          event,
+          responseText: newText
+        })
+      }
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(xhr.response)
+      } else {
+        reject(new Error(`请求失败: ${xhr.status}`))
+      }
+    }
+
+    xhr.onerror = () => {
+      reject(new Error('网络错误'))
+    }
+
+    xhr.send(JSON.stringify(config.data))
+  })
+}
+
 export default request

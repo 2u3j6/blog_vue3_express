@@ -28,7 +28,7 @@
 
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
-import request from '@/utils/request'
+import request, { createStreamRequest } from '@/utils/request'
 
 const inputMessage = ref('')
 const messages = ref([])
@@ -48,28 +48,42 @@ const handleSend = async () => {
 
   loading.value = true
   try {
-    const response = await request.post('/chat', {
-      message: userMessage
+    messages.value.push({
+      role: 'assistant',
+      content: ''
     })
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value);
-      const lines = chunk.split('\n');
-
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          const data = JSON.parse(line.slice(6));
-          // 处理接收到的数据
-          console.log(data);
+    await createStreamRequest({
+      url: '/chat',
+      method: 'post',
+      data: {
+        message: userMessage
+      },
+      onDownloadProgress: ({ responseText }) => {
+        if (responseText) {
+          const lines = responseText.split('\n')
+          for (const line of lines) {
+            if (line.trim() === '') continue
+            
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6))
+                if (data.code === 200) {
+                  const lastMessage = messages.value[messages.value.length - 1]
+                  if (lastMessage.role === 'assistant') {
+                    lastMessage.content += data.data || ''
+                    scrollToBottom()
+                  }
+                }
+              } catch (e) {
+                console.error('解析消息失败:', e, '原始数据:', line)
+              }
+            }
+          }
         }
       }
-    }
+    })
+
   } catch (error) {
     console.error('Chat error:', error)
     messages.value.push({
@@ -78,7 +92,7 @@ const handleSend = async () => {
     })
   } finally {
     loading.value = false
-    scrollToBottom()
+    await scrollToBottom()
   }
 }
 
