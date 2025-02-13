@@ -1,5 +1,10 @@
 <template>
   <div class="chat-container">
+    <!-- 添加清除历史按钮 -->
+    <div class="chat-header">
+      <el-button type="danger" size="small" @click="clearHistory">清除历史记录</el-button>
+    </div>
+
     <!-- 聊天记录区域 -->
     <div class="chat-messages" ref="messagesRef">
       <div v-for="(message, index) in messages" :key="index" :class="['message', message.role]">
@@ -27,13 +32,35 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted } from 'vue'
+import { ref, nextTick, onMounted, watch } from 'vue'
 import request, { createStreamRequest } from '@/utils/request'
 
 const inputMessage = ref('')
 const messages = ref([])
 const loading = ref(false)
 const messagesRef = ref(null)
+
+// 从 localStorage 加载聊天记录
+const loadMessages = () => {
+  const savedMessages = localStorage.getItem('chatMessages')
+  if (savedMessages) {
+    messages.value = JSON.parse(savedMessages)
+  } else {
+    // 如果没有保存的消息，显示欢迎消息
+    messages.value = [{
+      role: 'assistant',
+      content: '你好！我是 AI 助手，有什么可以帮你的吗？'
+    }]
+  }
+}
+
+// 保存聊天记录到 localStorage
+const saveMessages = () => {
+  localStorage.setItem('chatMessages', JSON.stringify(messages.value))
+}
+
+// 监听消息变化，自动保存
+watch(messages, saveMessages, { deep: true })
 
 // 发送消息
 const handleSend = async () => {
@@ -105,20 +132,34 @@ const scrollToBottom = async () => {
 }
 
 onMounted(() => {
-  // 初始欢迎消息
-  messages.value.push({
+  // 替换原来的欢迎消息初始化，改用 loadMessages
+  loadMessages()
+  scrollToBottom()
+})
+
+// 可以添加一个清除历史记录的方法
+const clearHistory = () => {
+  messages.value = [{
     role: 'assistant',
     content: '你好！我是 AI 助手，有什么可以帮你的吗？'
-  })
-})
+  }]
+  localStorage.removeItem('chatMessages')
+}
 </script>
 
 <style scoped>
 .chat-container {
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   padding: 20px;
+}
+
+.chat-header {
+  padding: 10px;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
 }
 
 .chat-messages {
