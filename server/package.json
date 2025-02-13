@@ -10,15 +10,17 @@
   "dependencies": {
     "@koa/cors": "^4.0.0",
     "@koa/router": "^12.0.0",
+    "axios": "^1.7.9",
     "bcryptjs": "^2.4.3",
+    "dotenv": "^16.0.3",
     "jsonwebtoken": "^9.0.0",
     "koa": "^2.14.2",
     "koa-bodyparser": "^4.4.1",
     "mysql2": "^3.6.0",
-    "sequelize": "^6.32.1",
-    "dotenv": "^16.0.3"
+    "openai": "^4.84.0",
+    "sequelize": "^6.32.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   }
-} 
+}

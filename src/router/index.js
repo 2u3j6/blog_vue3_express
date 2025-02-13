@@ -62,6 +62,16 @@ const routes = [
           icon: 'Collection',
           sort: 4
         }
+      },
+      {
+        path: 'deepseek',
+        name: 'DeepSeek',
+        component: () => import('../views/DeepSeek.vue'),
+        meta: {
+          title: 'DeepSeek',
+          icon: 'Collection',
+          sort: 5
+        }
       }
     ]
   }
