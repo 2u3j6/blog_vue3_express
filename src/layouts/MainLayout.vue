@@ -2,29 +2,15 @@
   <el-container class="layout-container">
     <el-aside width="200px">
       <el-menu :default-active="route.path" class="el-menu-vertical" router>
-        <el-menu-item index="/dashboard">
+        <el-menu-item 
+          v-for="menu in menus" 
+          :key="menu.path"
+          :index="menu.path"
+        >
           <el-icon>
-            <DataLine />
+            <component :is="menu.meta.icon" />
           </el-icon>
-          <span>仪表盘</span>
-        </el-menu-item>
-        <el-menu-item index="/posts">
-          <el-icon>
-            <Document />
-          </el-icon>
-          <span>文章管理</span>
-        </el-menu-item>
-        <el-menu-item index="/categories">
-          <el-icon>
-            <Files />
-          </el-icon>
-          <span>分类管理</span>
-        </el-menu-item>
-        <el-menu-item index="/tags">
-          <el-icon>
-            <Collection />
-          </el-icon>
-          <span>标签管理</span>
+          <span>{{ menu.meta.title }}</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -56,20 +42,25 @@
 </template>
 
 <script setup>
-  import { useUserStore } from '@/stores/user'
+import { useUserStore } from '@/stores/user'
+import { useRoute, useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { ArrowDown } from '@element-plus/icons-vue'
 
-  import { useRoute, useRouter } from 'vue-router'
-  import { DataLine, Document, Files, Collection, ArrowDown } from '@element-plus/icons-vue'
+const route = useRoute()
+const router = useRouter()
 
-  const route = useRoute()
-  const router = useRouter()
+// 从路由配置中获取菜单
+const menus = computed(() => {
+  const mainRoute = router.options.routes.find(route => route.path === '/')
+  return mainRoute?.children?.sort((a, b) => a.meta?.sort - b.meta?.sort) || []
+})
 
-  const handleLogout = () => {
-    // 实现登出逻辑
-    const userStore = useUserStore()
-    userStore.clearUserInfo()
-    router.push('/login')
-  }
+const handleLogout = () => {
+  const userStore = useUserStore()
+  userStore.clearUserInfo()
+  router.push('/login')
+}
 </script>
 
 <style scoped>
